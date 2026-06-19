@@ -1,0 +1,125 @@
+version: "3.9"
+
+# All services communicate on the qa-net bridge network.
+# Requirements: 2.4, 2.6
+
+networks:
+  qa-net:
+    driver: bridge
+
+services:
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: qa_agent
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [qa-net]
+
+  # ── Playwright MCP Server ──────────────────────────────────────────────────
+  playwright-mcp:
+    image: mcr.microsoft.com/playwright:v1.50.0-jammy
+    command: npx @playwright/mcp@latest --port 5170
+    ports:
+      - "5170:5170"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5170/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [qa-net]
+
+  # ── File System MCP Server ─────────────────────────────────────────────────
+  filesystem-mcp:
+    image: node:20-alpine
+    command: npx --yes @modelcontextprotocol/server-filesystem@latest /workspace
+    volumes:
+      - ./workspace:/workspace
+    ports:
+      - "5171:5171"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5171/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [qa-net]
+
+  # ── PostgreSQL MCP Server ──────────────────────────────────────────────────
+  postgres-mcp:
+    image: node:20-alpine
+    environment:
+      PG_CONNECTION_STRING: postgresql://postgres:password@postgres:5432/qa_agent
+    command: npx --yes @modelcontextprotocol/server-postgres@latest
+    ports:
+      - "5173:5173"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5173/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [qa-net]
+
+  # ── GitHub MCP Server ──────────────────────────────────────────────────────
+  github-mcp:
+    image: node:20-alpine
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    command: npx --yes @modelcontextprotocol/server-github@latest
+    ports:
+      - "5174:5174"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5174/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [qa-net]
+
+  # ── Application ────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/qa_agent
+      PLAYWRIGHT_MCP_URL: http://playwright-mcp:5170
+      POSTGRES_MCP_URL: http://postgres-mcp:5173
+      GITHUB_MCP_URL: http://github-mcp:5174
+      FILESYSTEM_MCP_COMMAND: npx
+      FILESYSTEM_MCP_ARGS: "@modelcontextprotocol/server-filesystem,/workspace"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./reports:/app/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      playwright-mcp:
+        condition: service_healthy
+      filesystem-mcp:
+        condition: service_healthy
+      postgres-mcp:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [qa-net]
+
+volumes:
+  postgres_data:

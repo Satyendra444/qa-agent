@@ -1,0 +1,67 @@
+{
+  "name": "ai-qa-agent",
+  "version": "0.1.0",
+  "description": "AI Agent & MCP Testing Framework — end-to-end automated QA pipeline",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "test": "vitest --run",
+    "test:unit": "vitest --run --project unit",
+    "test:unit:coverage": "vitest --run --project unit --coverage",
+    "test:integration": "vitest --run --project integration",
+    "test:watch": "vitest",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@langchain/langgraph": "0.2.72",
+    "@modelcontextprotocol/sdk": "1.11.4",
+    "ajv": "8.17.1",
+    "express": "4.21.2",
+    "htmlparser2": "9.1.0",
+    "openai": "4.98.0",
+    "pg": "8.13.3",
+    "playwright": "1.50.1",
+    "promptfoo": "0.104.1"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.1",
+    "@types/node": "22.15.21",
+    "@types/pg": "8.11.10",
+    "@types/supertest": "6.0.2",
+    "@typescript-eslint/eslint-plugin": "8.32.1",
+    "@typescript-eslint/parser": "8.32.1",
+    "@vitest/coverage-v8": "3.1.4",
+    "eslint": "9.26.0",
+    "fast-check": "3.23.2",
+    "husky": "9.1.7",
+    "lint-staged": "15.5.1",
+    "prettier": "3.5.3",
+    "supertest": "7.0.0",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3",
+    "vitest": "3.1.4"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "tests/**/*.ts": [
+      "prettier --write"
+    ],
+    "*.{json,yml,yaml,md}": [
+      "prettier --write"
+    ]
+  }
+}

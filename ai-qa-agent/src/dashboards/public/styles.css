@@ -1,0 +1,69 @@
+/* Observability Dashboard — base styles
+   Full design implementation in task 30.1 */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0 1.5rem 2rem;
+  background: #f8f9fa;
+  color: #212529;
+  line-height: 1.5;
+}
+
+header {
+  padding: 1.5rem 0 1rem;
+  border-bottom: 1px solid #dee2e6;
+  margin-bottom: 1.5rem;
+}
+
+h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+h2 { font-size: 1.15rem; margin: 1.5rem 0 0.75rem; }
+h3 { font-size: 1rem; margin: 0 0 0.5rem; }
+
+/* Error banner */
+.error-banner {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  color: #664d03;
+}
+.hidden { display: none !important; }
+
+/* Session table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+th, td {
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+th { background: #f1f3f5; font-weight: 600; }
+tbody tr:hover { background: #f8f9fa; cursor: pointer; }
+tbody tr:last-child td { border-bottom: none; }
+
+/* Chart grid */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+.chart-grid > div {
+  background: #fff;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+canvas { max-width: 100%; }
