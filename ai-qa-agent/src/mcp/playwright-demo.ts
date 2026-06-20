@@ -36,14 +36,14 @@ async function main(): Promise<void> {
   }
   process.stdout.write('\n');
 
-  process.stdout.write('=== Navigating to https://example.com ===\n');
+  process.stdout.write('=== Navigating to https://www.notesly.in/ ===\n');
   const navResult = await manager.callTool(
     'playwright',
     'browser_navigate',
-    { url: 'https://example.com' },
+    { url: 'https://www.notesly.in/' },
     SESSION_ID,
   );
-  logger.info(SESSION_ID, 'demo', 'browser_navigate', { url: 'https://example.com' }, { result: navResult.result }, 0);
+  logger.info(SESSION_ID, 'demo', 'browser_navigate', { url: 'https://www.notesly.in/' }, { result: navResult.result }, 0);
   process.stdout.write(`Navigation result: ${JSON.stringify(navResult.result, null, 2)}\n\n`);
 
   process.stdout.write('=== Taking a screenshot ===\n');

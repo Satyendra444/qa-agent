@@ -23,7 +23,7 @@ describe('HallucinationDetector', () => {
   });
 
   it('does not flag URLs that appear in both output and requirement', () => {
-    const url = 'https://example.com/login';
+    const url = 'https://www.notesly.in/login';
     const flags = detector.detect(
       `Navigate to ${url} and click submit`,
       `Open ${url} and validate the login page`,

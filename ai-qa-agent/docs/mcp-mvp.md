@@ -32,7 +32,7 @@ npx playwright install --with-deps chromium
 
 ## Run the demo
 
-Connects to Playwright MCP, lists all tools, navigates to `https://example.com`, and takes a screenshot:
+Connects to Playwright MCP, lists all tools, navigates to `https://www.notesly.in/`, and takes a screenshot:
 
 ```bash
 npx tsx src/mcp/playwright-demo.ts
@@ -49,7 +49,7 @@ Expected output:
   • browser_click — Click an element
   ...
 
-=== Navigating to https://example.com ===
+=== Navigating to https://www.notesly.in/ ===
 Navigation result: { ... }
 
 === Taking a screenshot ===
@@ -87,7 +87,7 @@ npm run test:integration
 The integration suite:
 1. Connects to a real Playwright MCP server process (stdio transport)
 2. Verifies tool discovery (`browser_navigate`, `browser_screenshot`, etc.)
-3. Executes `browser_navigate` against `https://example.com`
+3. Executes `browser_navigate` against `https://www.notesly.in/`
 4. Executes `browser_screenshot`
 5. Validates the structured log entry emitted for each tool call
 

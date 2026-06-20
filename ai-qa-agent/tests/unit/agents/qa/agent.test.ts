@@ -35,13 +35,13 @@ describe('QAAgent', () => {
 
   it('returns a QAReport with a sessionId', async () => {
     const agent = new QAAgent(makeManager(), logger, { serverId: 'playwright' });
-    const report = await agent.run('Open https://example.com and validate login page');
+    const report = await agent.run('Open https://www.notesly.in/login and validate login page');
     expect(typeof report.sessionId).toBe('string');
     expect(report.sessionId.length).toBeGreaterThan(0);
   });
 
   it('returns a QAReport with the original task', async () => {
-    const task = 'Open https://example.com/login and validate login page';
+    const task = 'Open https://www.notesly.in/ login and validate login page';
     const agent = new QAAgent(makeManager(), logger, { serverId: 'playwright' });
     const report = await agent.run(task);
     expect(report.task).toBe(task);
@@ -50,15 +50,15 @@ describe('QAAgent', () => {
   it('stores the result in memory after completion', async () => {
     const memory = new InMemoryAgentMemory();
     const agent = new QAAgent(makeManager(), logger, { serverId: 'playwright' }, memory);
-    await agent.run('Open https://example.com and validate login page');
+    await agent.run('Open https://www.notesly.in/ and validate login page');
     expect(agent.memory.size).toBe(1);
   });
 
   it('second run with similar task finds memory hit', async () => {
     const memory = new InMemoryAgentMemory();
     const agent = new QAAgent(makeManager(), logger, { serverId: 'playwright' }, memory);
-    await agent.run('Open https://example.com and validate login page');
-    await agent.run('Open https://example.com validate login page');
+    await agent.run('Open https://www.notesly.in/ and validate login page');
+    await agent.run('Open https://www.notesly.in/ validate login page');
 
     expect(logger.info).toHaveBeenCalledWith(
       expect.any(String),
@@ -73,11 +73,11 @@ describe('QAAgent', () => {
   it('report includes actions and validations', async () => {
     const evalOutput = JSON.stringify({
       hasEmailOrUsername: true, hasPassword: true, hasSubmitButton: true,
-      pageTitle: 'Login', url: 'https://example.com/login',
+      pageTitle: 'Login', url: 'https://www.notesly.in/login',
     });
     const manager = makeManager({ content: [{ type: 'text', text: evalOutput }] });
     const agent = new QAAgent(manager, logger, { serverId: 'playwright' });
-    const report = await agent.run('Open https://example.com/login and validate login page');
+    const report = await agent.run('Open https://www.notesly.in/login and validate login page');
 
     expect(report.actions.length).toBeGreaterThan(0);
     expect(typeof report.durationMs).toBe('number');
@@ -89,7 +89,7 @@ describe('QAAgent', () => {
     const manager = makeManager();
     (manager.callTool as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('network error'));
     const agent = new QAAgent(manager, logger, { serverId: 'playwright' });
-    const report = await agent.run('Open https://example.com and validate login page');
+    const report = await agent.run('Open https://www.notesly.in/ and validate login page');
 
     expect(report.status).toBe('failed');
     expect(report.errors.length).toBeGreaterThan(0);
@@ -97,7 +97,7 @@ describe('QAAgent', () => {
 
   it('report has completedAt after startedAt', async () => {
     const agent = new QAAgent(makeManager(), logger, { serverId: 'playwright' });
-    const report = await agent.run('Open https://example.com');
+    const report = await agent.run('Open https://www.notesly.in/');
     expect(new Date(report.completedAt).getTime()).toBeGreaterThanOrEqual(
       new Date(report.startedAt).getTime(),
     );
@@ -106,7 +106,7 @@ describe('QAAgent', () => {
   it('each run produces a unique sessionId', async () => {
     const agent = new QAAgent(makeManager(), logger, { serverId: 'playwright' });
     const [r1, r2] = await Promise.all([
-      agent.run('Open https://example.com'),
+      agent.run('Open https://www.notesly.in/'),
       agent.run('Open https://other.com'),
     ]);
     expect(r1.sessionId).not.toBe(r2.sessionId);
@@ -123,7 +123,7 @@ describe('QAAgent', () => {
     });
 
     const agent = new QAAgent(manager, logger, { serverId: 'playwright' }, undefined);
-    const report = await agent.run('Open https://example.com');
+    const report = await agent.run('Open https://www.notesly.in/');
     expect(report).toBeDefined();
   });
 });

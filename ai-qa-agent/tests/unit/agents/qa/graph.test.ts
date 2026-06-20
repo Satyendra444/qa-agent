@@ -13,7 +13,7 @@ function makeLogger(): ILogger {
 function makeState(overrides: Partial<QAAgentState> = {}): QAAgentState {
   return {
     sessionId: 'test-session',
-    task: 'Open https://example.com/login and validate login page',
+    task: 'Open https://www.notesly.in/login and validate login page',
     stage: 'plan',
     plannedActions: [],
     executedActions: [],
@@ -85,7 +85,7 @@ describe('buildGraph — execute node', () => {
     const state = makeState({
       stage: 'execute',
       plannedActions: [
-        { id: 'a1', toolName: 'browser_navigate', serverId: 'playwright', input: { url: 'https://example.com' }, description: 'Navigate', retries: 0 },
+        { id: 'a1', toolName: 'browser_navigate', serverId: 'playwright', input: { url: 'https://www.notesly.in/' }, description: 'Navigate', retries: 0 },
       ],
     });
 
@@ -103,7 +103,7 @@ describe('buildGraph — execute node', () => {
     const state = makeState({
       stage: 'execute',
       plannedActions: [
-        { id: 'a1', toolName: 'browser_navigate', serverId: 'playwright', input: { url: 'https://example.com' }, description: 'Navigate', retries: 0 },
+        { id: 'a1', toolName: 'browser_navigate', serverId: 'playwright', input: { url: 'https://www.notesly.in/' }, description: 'Navigate', retries: 0 },
       ],
     });
 
@@ -136,7 +136,7 @@ describe('buildGraph — validate node', () => {
       hasPassword: true,
       hasSubmitButton: true,
       pageTitle: 'Login',
-      url: 'https://example.com/login',
+      url: 'https://www.notesly.in/login',
     });
 
     const graph = buildGraph(makeManager(), new InMemoryAgentMemory(), makeLogger(), 'playwright');

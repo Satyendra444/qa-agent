@@ -40,13 +40,13 @@ describe('QAAgent — integration with real Playwright MCP', () => {
   });
 
   it('returns a report with a valid sessionId', async () => {
-    const report = await agent.run('Open https://example.com');
+    const report = await agent.run('Open https://www.notesly.in/');
     expect(typeof report.sessionId).toBe('string');
     expect(report.sessionId.length).toBeGreaterThan(0);
   }, 30_000);
 
   it('successfully navigates to example.com', async () => {
-    const report = await agent.run('Open https://example.com');
+    const report = await agent.run('Open https://www.notesly.in/');
     const navAction = report.actions.find((a) => a.toolName === 'browser_navigate');
     expect(navAction).toBeDefined();
     expect(navAction?.status).toBe('success');
@@ -67,15 +67,15 @@ describe('QAAgent — integration with real Playwright MCP', () => {
     const memory = new InMemoryAgentMemory();
     const agentWithMemory = new QAAgent(manager, new ConsoleLogger(), { serverId: 'playwright' }, memory);
 
-    await agentWithMemory.run('Open https://example.com');
+    await agentWithMemory.run('Open https://www.notesly.in/');
     expect(agentWithMemory.memory.size).toBe(1);
 
-    await agentWithMemory.run('Open https://example.com again');
+    await agentWithMemory.run('Open https://www.notesly.in/ again');
     expect(agentWithMemory.memory.size).toBe(2);
   }, 60_000);
 
   it('report has all required fields', async () => {
-    const report = await agent.run('Open https://example.com');
+    const report = await agent.run('Open https://www.notesly.in/');
     expect(typeof report.sessionId).toBe('string');
     expect(typeof report.task).toBe('string');
     expect(['passed', 'failed', 'partial']).toContain(report.status);

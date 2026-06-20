@@ -39,7 +39,7 @@ function extractUrl(task: string): string {
   const domainMatch = task.match(/\b(www\.[a-z0-9.-]+\.[a-z]{2,}|[a-z0-9-]+\.(com|org|net|io|dev|app))\b/i);
   if (domainMatch) return `https://${domainMatch[0]}`;
 
-  return 'https://example.com';
+  return 'https://www.notesly.in/';
 }
 
 export function planActions(

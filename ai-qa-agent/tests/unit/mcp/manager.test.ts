@@ -116,7 +116,7 @@ describe('MCPServerManager', () => {
     );
     await manager.connect();
 
-    await manager.callTool('playwright', 'browser_navigate', { url: 'https://example.com' }, 'session-1');
+    await manager.callTool('playwright', 'browser_navigate', { url: 'https://www.notesly.in/' }, 'session-1');
 
     expect(logger.log).toHaveBeenCalledWith(
       expect.objectContaining({

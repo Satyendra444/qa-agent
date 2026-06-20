@@ -69,7 +69,7 @@ describe('Playwright MCP Server — integration', () => {
     const { result } = await manager.callTool(
       'playwright',
       'browser_navigate',
-      { url: 'https://example.com' },
+      { url: 'https://www.notesly.in/' },
       SESSION_ID,
     );
     expect(result).toBeDefined();
@@ -107,7 +107,7 @@ describe('Playwright MCP Server — integration', () => {
       capturingLogger,
     );
     await m.connect();
-    await m.callTool('playwright', 'browser_navigate', { url: 'https://example.com' }, SESSION_ID);
+    await m.callTool('playwright', 'browser_navigate', { url: 'https://www.notesly.in/' }, SESSION_ID);
     await m.disconnect();
 
     const toolLog = (logs as Array<Record<string, unknown>>).find(

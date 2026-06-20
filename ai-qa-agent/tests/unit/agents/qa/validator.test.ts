@@ -73,7 +73,7 @@ describe('runStructuralValidation', () => {
     hasPassword: true,
     hasSubmitButton: true,
     pageTitle: 'Login',
-    url: 'https://example.com/login',
+    url: 'https://www.notesly.in/login',
   });
 
   it('returns structural checks from browser_evaluate result', () => {
@@ -105,7 +105,7 @@ describe('runStructuralValidation', () => {
       hasPassword: false,
       hasSubmitButton: true,
       pageTitle: 'Login',
-      url: 'https://example.com',
+      url: 'https://www.notesly.in/',
     });
     const results = [
       makeResult({

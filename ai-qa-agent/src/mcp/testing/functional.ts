@@ -16,7 +16,7 @@ export interface FunctionalResult {
 }
 
 const SAMPLE_STRINGS: Record<string, string> = {
-  url: 'https://example.com',
+  url: 'https://www.notesly.in/',
   path: '/tmp',
   selector: 'body',
   text: 'sample text',

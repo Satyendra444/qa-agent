@@ -61,31 +61,167 @@ cp .env.example .env
 #   DATABASE_URL=postgresql://postgres:password@localhost:5432/qa_agent
 ```
 
-### 4 — Start infrastructure (Docker Compose)
+### 4 — Start the Docker daemon (macOS)
+
+This project requires a running Docker daemon for the Compose stack.
+
+If you use Docker Desktop:
+
+- Open Docker Desktop and wait until the daemon is running.
+
+If you do not have Docker Desktop, install Colima:
+
+```bash
+brew install colima
+colima start --cpu 2 --memory 4 --disk 60
+```
+
+Confirm the daemon is running:
+
+```bash
+docker info
+```
+
+If your system does not support `docker compose`, use the fallback:
+
+```bash
+docker-compose --version
+```
+
+### 5 — Start infrastructure (Docker Compose)
 
 ```bash
 docker compose up -d
 ```
 
+If necessary, use the legacy CLI:
+
+```bash
+docker-compose up -d
+```
+
 All services (PostgreSQL, Playwright MCP, File System MCP, PostgreSQL MCP,
-GitHub MCP) start on the `qa-net` bridge network. The `app` service is also
-started, listening on **http://localhost:3000**.
+GitHub MCP) start on the `qa-net` bridge network. The `app` service listens on
+**http://localhost:3000**.
 
 Wait for everything to be healthy:
 
 ```bash
 docker compose ps
-# All services should show "healthy" after ~30 s
+# or docker-compose ps
 ```
 
-### 5 — Run without Docker (development)
+### 6 — Run the app locally (development)
+
+If you want to run only the application and connect to a PostgreSQL instance,
+use:
 
 ```bash
-# Requires DATABASE_URL pointing to a running PostgreSQL instance
 npm run dev
 ```
 
-### 6 — Run tests
+Open the dashboard in a browser:
+
+- http://localhost:3000/dashboard
+
+### 7 — Use the prompt-driven demo workflow
+
+1. Edit `demo/requirement.txt` with your requirement.
+2. Use `demo/prompts/requirement-agent.md` to extract structured scenarios.
+3. Use `demo/prompts/testcase-agent.md` to convert scenarios into test cases.
+4. Use `demo/prompts/automation-agent.md` to generate a Playwright script.
+5. Use `demo/prompts/execution-agent.md` to execute the script and collect a result.
+
+### 8 — Example: NoteStly homepage validation
+
+Requirement example:
+
+```text
+Verify the NoteStly homepage title and description. The page title should be "NoteStly" and the meta description should include "modern note-taking".
+```
+
+Prompt example for the requirement agent:
+
+```text
+You are an AI requirement agent. Transform the following user requirement into a small set of test scenarios.
+
+Requirement:
+Verify the NoteStly homepage title and description. The page title should be "NoteStly" and the meta description should include "modern note-taking".
+```
+
+Expected scenarios:
+
+- Verify the homepage title is "NoteStly"
+- Verify the homepage meta description contains "modern note-taking"
+
+Prompt example for the testcase agent:
+
+```text
+You are an AI test case generator. Convert the following scenarios into explicit test cases with a name and expected outcome.
+
+Scenarios:
+- Verify the homepage title is "NoteStly"
+- Verify the homepage meta description contains "modern note-taking"
+```
+
+Expected test cases:
+
+- `Homepage title is NoteStly`
+- `Homepage meta description contains modern note-taking`
+
+Prompt example for the automation agent:
+
+```text
+You are an AI automation engineer. Generate a Playwright TypeScript script that performs the given test cases.
+
+Test cases:
+- Homepage title is NoteStly
+- Homepage meta description contains modern note-taking
+
+Output only the final Playwright TypeScript code.
+```
+
+The generated automation should:
+
+- open the NoteStly homepage URL `https://www.notesly.in/`
+- assert `document.title === "NoteStly"`
+- assert the meta description contains `"modern note-taking"`
+- capture any failures and screenshots if supported
+
+Prompt example for the execution agent:
+
+```text
+You are an AI execution agent. Run the generated Playwright script and return a structured result with pass/fail status, actions taken, and any error details.
+```
+
+This flow shows how a single natural-language requirement becomes:
+
+1. structured scenarios
+2. explicit test cases
+3. generated Playwright automation
+4. executed results and a QA report
+
+### 9 — Example cURL flow
+
+```bash
+curl -X POST http://localhost:3000/api/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"requirement": "Verify the NoteStly homepage title and description. The page title should be \"NoteStly\" and the meta description should include \"modern note-taking\"."}'
+```
+
+Then poll session status:
+
+```bash
+curl http://localhost:3000/api/sessions/<sessionId>
+```
+
+And open the dashboard:
+
+```text
+http://localhost:3000/dashboard
+```
+
+### 10 — Run tests
 
 ```bash
 # Unit tests
@@ -154,8 +290,22 @@ ai-qa-agent/
 ├── evals/fixtures/   # Sample session logs + reference data
 ├── docs/             # Architecture documentation
 ├── docker/           # Dockerfile + init.sql
+├── demo/             # End-to-end prompt and sample demo artifacts
 └── reports/          # Runtime HTML output (git-ignored)
 ```
+
+---
+
+## Demo Assets
+
+The `demo/` directory contains a reusable end-to-end proof-of-concept asset set for the AI QA pipeline:
+
+- `requirement.txt` — sample requirement used as demo input.
+- `prompts/` — prompt templates for each pipeline agent stage.
+- `sample-output.json` — expected session output format for a completed demo run.
+- `sample-report.md` — human-readable summary of a demo session.
+
+See `demo/README.md` for instructions and example flow.
 
 ---
 
@@ -175,3 +325,4 @@ full roadmap.
 2. Make changes — Husky runs `lint-staged` on commit
 3. Open a pull request targeting `develop`
 4. CI must pass (type check + lint + format + unit tests) before merge
+# qa-agent
