@@ -1,9 +1,4 @@
 version: "3.9"
-
-# Test-only Compose override — used by the CI integration job.
-# Starts only the infrastructure services (no app container).
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
-
 networks:
   qa-net:
     driver: bridge

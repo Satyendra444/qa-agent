@@ -21,6 +21,7 @@
     "test:watch": "vitest",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
+    "demo:playwright": "tsx src/mcp/playwright-demo.ts",
     "prepare": "husky"
   },
   "dependencies": {

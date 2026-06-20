@@ -1,45 +1,95 @@
-
 import type { LogEntry } from '@shared/types.js';
 import type { ILogger } from './logger.js';
+import type { Pool } from 'pg';
 
 export interface ILogPersistence {
-  /** Write a log entry to PostgreSQL.  Buffers on failure and retries. */
   persist(entry: LogEntry): Promise<void>;
-  /** Flush all buffered entries.  Call on graceful shutdown. */
   flush(): Promise<void>;
-  /** Purge entries older than LOG_RETENTION_DAYS (no-op if not configured). */
   purgeExpired(): Promise<void>;
 }
 
-/**
- * Stub implementation — replace with full PostgreSQL writer in task 9.3.
- */
 export class LogPersistence implements ILogPersistence {
-  // In-memory buffer — maximum 1000 entries (Requirement 12.5)
   private readonly _buffer: LogEntry[] = [];
   private readonly _maxBuffer = 1000;
+  private readonly _maxRetries = 3;
+  private readonly _retryIntervalMs = 5_000;
 
   constructor(
+    private readonly _pool: Pool,
     private readonly _logger: ILogger,
     private readonly _logRetentionDays: number | undefined,
   ) {}
 
-  async persist(_entry: LogEntry): Promise<void> {
-    // TODO (task 9.3): write to agent_logs table; buffer on failure; retry every 5 s up to 3 times
-    throw new Error('LogPersistence.persist() not yet implemented — see task 9.3');
+  async persist(entry: LogEntry): Promise<void> {
+    let attempts = 0;
+
+    const tryWrite = async (): Promise<void> => {
+      await this._pool.query(
+        `INSERT INTO agent_logs
+           (timestamp, session_id, agent, tool, input, output, latency, status, tokens_used, errors)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          entry.timestamp,
+          entry.sessionId,
+          entry.agent,
+          entry.tool,
+          JSON.stringify(entry.input),
+          JSON.stringify(entry.output),
+          entry.latency,
+          entry.status,
+          entry.tokensUsed,
+          JSON.stringify(entry.errors),
+        ],
+      );
+    };
+
+    while (attempts < this._maxRetries) {
+      try {
+        await tryWrite();
+        return;
+      } catch {
+        attempts++;
+        if (attempts >= this._maxRetries) {
+          if (this._buffer.length < this._maxBuffer) {
+            this._buffer.push(entry);
+          }
+          this._logger.warn(entry.sessionId, 'log.persistence', 'Log write failed after 3 retries — entry discarded or buffered');
+          return;
+        }
+        await new Promise<void>((resolve) => setTimeout(resolve, this._retryIntervalMs));
+      }
+    }
   }
 
   async flush(): Promise<void> {
-    // TODO (task 9.3): drain _buffer, writing remaining entries to PostgreSQL
-    throw new Error('LogPersistence.flush() not yet implemented — see task 9.3');
+    const entries = this._buffer.splice(0);
+    for (const entry of entries) {
+      try {
+        await this._pool.query(
+          `INSERT INTO agent_logs
+             (timestamp, session_id, agent, tool, input, output, latency, status, tokens_used, errors)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+           ON CONFLICT DO NOTHING`,
+          [
+            entry.timestamp, entry.sessionId, entry.agent, entry.tool,
+            JSON.stringify(entry.input), JSON.stringify(entry.output),
+            entry.latency, entry.status, entry.tokensUsed, JSON.stringify(entry.errors),
+          ],
+        );
+      } catch {
+        this._logger.warn(entry.sessionId, 'log.persistence', 'Flush write failed — entry dropped');
+      }
+    }
   }
 
   async purgeExpired(): Promise<void> {
-    // TODO (task 9.3): DELETE FROM agent_logs WHERE timestamp < NOW() - INTERVAL
-    throw new Error('LogPersistence.purgeExpired() not yet implemented — see task 9.3');
+    if (this._logRetentionDays === undefined) return;
+    await this._pool.query(
+      `DELETE FROM agent_logs WHERE timestamp < NOW() - ($1 || ' days')::INTERVAL`,
+      [String(this._logRetentionDays)],
+    );
   }
 
-  /** Exposes buffer length for tests. @internal */
   get bufferLength(): number {
     return this._buffer.length;
   }

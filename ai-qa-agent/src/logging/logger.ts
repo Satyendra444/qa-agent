@@ -1,18 +1,7 @@
-
 import type { LogEntry } from '@shared/types.js';
 
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
-
 export interface ILogger {
-  /**
-   * Emit a structured log entry for any agent action, MCP tool call,
-   * LLM API call, or pipeline state transition.
-   */
   log(entry: LogEntry): void;
-
-  /** Convenience wrapper — builds and emits a LogEntry from loose parts. */
   info(
     sessionId: string,
     agent: string,
@@ -22,31 +11,12 @@ export interface ILogger {
     latencyMs: number,
     tokensUsed?: number,
   ): void;
-
-  /** Emit a warning entry (status = "warning"). */
-  warn(
-    sessionId: string,
-    agent: string,
-    message: string,
-    extra?: Record<string, unknown>,
-  ): void;
-
-  /** Emit an error entry (status = "error"). */
-  error(
-    sessionId: string,
-    agent: string,
-    message: string,
-    errors?: string[],
-  ): void;
+  warn(sessionId: string, agent: string, message: string, extra?: Record<string, unknown>): void;
+  error(sessionId: string, agent: string, message: string, errors?: string[]): void;
 }
-
-// ---------------------------------------------------------------------------
-// Console implementation (used in dev / until persistence is wired)
-// ---------------------------------------------------------------------------
 
 export class ConsoleLogger implements ILogger {
   log(entry: LogEntry): void {
-    // Emit as a single-line JSON string so structured log processors can parse it.
     process.stdout.write(JSON.stringify(entry) + '\n');
   }
 
@@ -114,5 +84,4 @@ export class ConsoleLogger implements ILogger {
   }
 }
 
-/** Singleton console logger — swap out at wiring time for a persisting logger. */
 export const defaultLogger: ILogger = new ConsoleLogger();

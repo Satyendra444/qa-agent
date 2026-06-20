@@ -1,9 +1,3 @@
--- Migration 001 — Initial schema
--- Requirements: 8.5, 12.2, 12.3
--- Run once against the qa_agent database (also mounted as docker/init.sql).
-
--- ── Sessions ──────────────────────────────────────────────────────────────
-
 CREATE TABLE IF NOT EXISTS sessions (
     session_id      TEXT PRIMARY KEY,
     status          TEXT NOT NULL

@@ -1,5 +1,4 @@
-
-import type { MCPServerManager } from '../manager/index.js';
+import type { MCPServerManager } from '@mcp/manager/index.js';
 
 export interface ConcurrencyResult {
   concurrencyLevel: number;
@@ -9,7 +8,6 @@ export interface ConcurrencyResult {
   durationMs: number;
 }
 
-/** Valid concurrency range — requirement 10.5. */
 export const MIN_CONCURRENCY = 1;
 export const MAX_CONCURRENCY = 50;
 
@@ -19,18 +17,51 @@ export class ConcurrencyTester {
     private readonly _timeoutMs: number = 30_000,
   ) {}
 
-  /**
-   * Executes `concurrencyLevel` parallel calls to `toolName` on `serverId`.
-   *
-   * @throws {Error} If `concurrencyLevel` is outside the range 1–50.
-   * TODO (task 23.1): implement parallel call execution and timeout tracking.
-   */
   async run(
-    _serverId: string,
-    _toolName: string,
-    _input: Record<string, unknown>,
-    _concurrencyLevel: number,
+    serverId: string,
+    toolName: string,
+    input: Record<string, unknown>,
+    concurrencyLevel: number,
   ): Promise<ConcurrencyResult> {
-    throw new Error('ConcurrencyTester.run() not yet implemented — see task 23.1');
+    if (concurrencyLevel < MIN_CONCURRENCY || concurrencyLevel > MAX_CONCURRENCY) {
+      throw new Error(
+        `Concurrency level must be between ${MIN_CONCURRENCY} and ${MAX_CONCURRENCY}, got ${concurrencyLevel}`,
+      );
+    }
+
+    const start = Date.now();
+    let successful = 0;
+    let timedOut = 0;
+    let failed = 0;
+
+    const makeCall = async (): Promise<void> => {
+      const callPromise = this._manager.callTool(serverId, toolName, input, 'concurrency-test');
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), this._timeoutMs),
+      );
+      try {
+        await Promise.race([callPromise, timeoutPromise]);
+        successful++;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message.toLowerCase() : '';
+        if (msg.includes('timeout')) {
+          timedOut++;
+        } else {
+          failed++;
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: concurrencyLevel }, () => makeCall()),
+    );
+
+    return {
+      concurrencyLevel,
+      successful,
+      timedOut,
+      failed,
+      durationMs: Date.now() - start,
+    };
   }
 }

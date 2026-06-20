@@ -1,42 +1,44 @@
-
-
 export interface SemanticEvaluationResult {
-  similarity: number;   // 0.0–1.0
+  similarity: number;
   passed: boolean;
   reason?: string;
 }
 
-/**
- * Abstraction over the concrete evaluation library so unit tests can
- * inject a mock without importing DeepEval/Promptfoo.
- */
 export interface ISemanticEvaluator {
-  /**
-   * Computes similarity between `output` and `reference`.
-   * Returns a score in [0, 1] and whether it meets the threshold.
-   */
-  evaluate(
-    output: string,
-    reference: string,
-    threshold: number,
-  ): Promise<SemanticEvaluationResult>;
+  evaluate(output: string, reference: string, threshold: number): Promise<SemanticEvaluationResult>;
 }
 
-/**
- * Concrete adapter backed by DeepEval / Promptfoo.
- * TODO (task 26.2): implement using the promptfoo package.
- */
 export class DeepEvalAdapter implements ISemanticEvaluator {
-  constructor(
-    /** Similarity threshold (0.0–1.0, default 0.7). */
-    private readonly _defaultThreshold = 0.7,
-  ) {}
+  constructor(private readonly _defaultThreshold = 0.7) {}
 
   async evaluate(
-    _output: string,
-    _reference: string,
-    _threshold: number = this._defaultThreshold,
+    output: string,
+    reference: string,
+    threshold: number = this._defaultThreshold,
   ): Promise<SemanticEvaluationResult> {
-    throw new Error('DeepEvalAdapter.evaluate() not yet implemented — see task 26.2');
+    // Jaccard similarity on word tokens as a lightweight stand-in until
+    // the promptfoo LLM-judge integration is wired (task 26.2).
+    const tokenize = (s: string): Set<string> =>
+      new Set(s.toLowerCase().split(/\W+/).filter((w) => w.length > 2));
+
+    const outTokens = tokenize(output);
+    const refTokens = tokenize(reference);
+
+    let intersection = 0;
+    for (const t of outTokens) {
+      if (refTokens.has(t)) intersection++;
+    }
+
+    const union = new Set([...outTokens, ...refTokens]).size;
+    const similarity = union === 0 ? 0 : intersection / union;
+    const passed = similarity >= threshold;
+
+    return {
+      similarity,
+      passed,
+      reason: passed
+        ? `Similarity ${similarity.toFixed(3)} meets threshold ${threshold}`
+        : `Similarity ${similarity.toFixed(3)} is below threshold ${threshold}`,
+    };
   }
 }

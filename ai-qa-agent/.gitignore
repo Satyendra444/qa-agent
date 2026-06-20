@@ -118,3 +118,6 @@ tmtags
 .tmp/
 tmp/
 temp/
+.DS_Store
+.kiro/
+.vscode/

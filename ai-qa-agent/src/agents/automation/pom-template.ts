@@ -4,6 +4,29 @@ export interface PageObjectSpec {
   actions: string[];
 }
 
-export function generatePageObject(_spec: PageObjectSpec): string {
-  throw new Error('generatePageObject() not yet implemented — see task 15.1');
+export function generatePageObject(spec: PageObjectSpec): string {
+  const { className, selectors, actions } = spec;
+
+  const selectorProps = Object.entries(selectors)
+    .map(([name, sel]) => `  readonly ${name} = this.page.locator('${sel}');`)
+    .join('\n');
+
+  const actionMethods = actions
+    .map((action) => {
+      const camel = action.replace(/[^a-zA-Z0-9]+(.)/g, (_, c: string) => c.toUpperCase());
+      return `  async ${camel}(): Promise<void> {\n    // TODO: implement ${action}\n  }`;
+    })
+    .join('\n\n');
+
+  return [
+    `import { type Page } from '@playwright/test';`,
+    ``,
+    `export class ${className} {`,
+    `  constructor(private readonly page: Page) {}`,
+    ``,
+    selectorProps,
+    ``,
+    actionMethods,
+    `}`,
+  ].join('\n');
 }

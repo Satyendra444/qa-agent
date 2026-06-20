@@ -1,4 +1,6 @@
+import { randomUUID } from 'crypto';
 import type { PipelineState } from '@shared/types.js';
+import type { Session } from '@shared/types.js';
 
 export function createInitialState(sessionId: string, requirement: string): PipelineState {
   return {
@@ -14,6 +16,19 @@ export function createInitialState(sessionId: string, requirement: string): Pipe
   };
 }
 
+export function createSession(requirement: string): Session {
+  return {
+    sessionId: randomUUID(),
+    status: 'pending',
+    requirement,
+    currentAgent: null,
+    outputs: {},
+    errors: [],
+    startedAt: new Date().toISOString(),
+    completedAt: null,
+  };
+}
+
 export const PIPELINE_STAGES = [
   'RequirementExtraction',
   'TestCaseGeneration',
@@ -25,5 +40,4 @@ export const PIPELINE_STAGES = [
 
 export type PipelineStage = (typeof PIPELINE_STAGES)[number];
 
-/** Maximum retries per stage before transitioning to `Failed`. */
 export const MAX_STAGE_RETRIES = 2;

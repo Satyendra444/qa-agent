@@ -1,3 +1,4 @@
+import Ajv from 'ajv';
 import type { MCPToolSchema } from '@shared/types.js';
 
 export interface ContractFailure {
@@ -11,13 +12,28 @@ export interface ContractValidationResult {
   failures: ContractFailure[];
 }
 
+const ajv = new Ajv({ strict: true, allErrors: true });
+
 export class ContractValidator {
-  /**
-   * Validates the input schema of each supplied tool.
-   * Returns counts plus per-failure detail.
-   * TODO (task 20.1): use AJV strict mode to validate JSON Schema structure.
-   */
-  validate(_tools: MCPToolSchema[]): ContractValidationResult {
-    throw new Error('ContractValidator.validate() not yet implemented — see task 20.1');
+  validate(tools: MCPToolSchema[]): ContractValidationResult {
+    const failures: ContractFailure[] = [];
+
+    for (const tool of tools) {
+      try {
+        const valid = ajv.validateSchema(tool.inputSchema);
+        if (!valid) {
+          const errors = (ajv.errors ?? []).map((e: { message?: string }) => e.message ?? 'unknown error').join('; ');
+          failures.push({ toolName: tool.name, reason: `Invalid JSON Schema: ${errors}` });
+        }
+      } catch (err) {
+        failures.push({ toolName: tool.name, reason: `Schema validation threw: ${String(err)}` });
+      }
+    }
+
+    return {
+      passed: tools.length - failures.length,
+      failed: failures.length,
+      failures,
+    };
   }
 }

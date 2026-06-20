@@ -13,26 +13,16 @@ export function createApp(
 ): express.Application {
   const app = express();
 
-  // ── Body parsing ────────────────────────────────────────────────────────
   app.use(express.json());
-
-  // ── Request logging ─────────────────────────────────────────────────────
   app.use(requestLogger(logger));
 
-  // ── Health check (Requirement 2.6 / task 38.2) ─────────────────────────
-  // TODO (task 38.2): replace stub with full health check
   app.get('/health', (_req, res) => {
-    res.status(200).json({ status: 'ok' });
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // ── API routes ──────────────────────────────────────────────────────────
   app.use('/api/sessions', createSessionRouter(orchestrator));
   app.use('/api/sessions/:sessionId/report', createReportRouter(reportDir));
 
-  // ── Dashboard (static + data) — wired in task 30.3 ─────────────────────
-  // TODO (task 30.3): app.use('/dashboard', dashboardRouter);
-
-  // ── Global error handler (must be last) ────────────────────────────────
   app.use(globalErrorHandler);
 
   return app;

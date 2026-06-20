@@ -5,66 +5,63 @@ export interface ReferenceDecision {
   optimalTool: string;
 }
 
-/**
- * Ratio of tasks with status "success" to total tasks.
- * TODO (task 25.1): implement.
- */
-export function computeTaskSuccessRate(_log: LogEntry[]): number {
-  throw new Error('computeTaskSuccessRate() not yet implemented — see task 25.1');
+export function computeTaskSuccessRate(log: LogEntry[]): number {
+  const tasks = log.filter((e) => e.agent !== 'mcp.manager');
+  if (tasks.length === 0) return 0;
+  const succeeded = tasks.filter((e) => e.status === 'success').length;
+  return succeeded / tasks.length;
 }
 
-/**
- * Ratio of tool calls matching optimalTool in referenceDecisions; null if no
- * reference set is provided.
- * TODO (task 25.1): implement.
- */
 export function computeToolAccuracy(
-  _log: LogEntry[],
-  _referenceDecisions?: ReferenceDecision[],
+  log: LogEntry[],
+  referenceDecisions?: ReferenceDecision[],
 ): number | null {
-  throw new Error('computeToolAccuracy() not yet implemented — see task 25.1');
+  if (!referenceDecisions || referenceDecisions.length === 0) return null;
+
+  const toolCalls = log.filter((e) => e.agent === 'mcp.manager');
+  if (toolCalls.length === 0) return null;
+
+  const refMap = new Map(referenceDecisions.map((r) => [r.toolCall, r.optimalTool]));
+  let correct = 0;
+  let compared = 0;
+
+  for (const entry of toolCalls) {
+    const optimal = refMap.get(entry.tool);
+    if (optimal !== undefined) {
+      compared++;
+      if (entry.tool === optimal) correct++;
+    }
+  }
+
+  return compared === 0 ? null : correct / compared;
 }
 
-/**
- * Semantic similarity–based hallucination rate; null if no grounded reference.
- * TODO (task 25.1): implement (returns null placeholder until task 26 integrates DeepEval).
- */
 export function computeHallucinationRate(
   _log: LogEntry[],
   _groundedRef?: string,
   _threshold?: number,
 ): number | null {
-  throw new Error('computeHallucinationRate() not yet implemented — see task 25.1');
+  // Requires semantic evaluation — returns null until DeepEval adapter is wired
+  return null;
 }
 
-/**
- * Mean of all latency values in the session log.
- * TODO (task 25.1): implement.
- */
-export function computeAverageLatency(_log: LogEntry[]): number {
-  throw new Error('computeAverageLatency() not yet implemented — see task 25.1');
+export function computeAverageLatency(log: LogEntry[]): number {
+  if (log.length === 0) return 0;
+  const total = log.reduce((sum, e) => sum + e.latency, 0);
+  return total / log.length;
 }
 
-/**
- * Sum of all tokensUsed values.
- * TODO (task 25.1): implement.
- */
-export function computeTokenUsage(_log: LogEntry[]): number {
-  throw new Error('computeTokenUsage() not yet implemented — see task 25.1');
+export function computeTokenUsage(log: LogEntry[]): number {
+  return log.reduce((sum, e) => sum + e.tokensUsed, 0);
 }
 
-/**
- * Ratio of tool calls with status "failure" to all tool calls.
- * TODO (task 25.1): implement.
- */
-export function computeFailureRate(_log: LogEntry[]): number {
-  throw new Error('computeFailureRate() not yet implemented — see task 25.1');
+export function computeFailureRate(log: LogEntry[]): number {
+  const toolCalls = log.filter((e) => e.agent === 'mcp.manager');
+  if (toolCalls.length === 0) return 0;
+  const failed = toolCalls.filter((e) => e.status === 'error' || e.status === 'failure').length;
+  return failed / toolCalls.length;
 }
 
-/**
- * tokenUsage × costPerToken.
- * TODO (task 25.1): implement.
- */
 export function computeCostPerExecution(tokenUsage: number, costPerToken: number): number {
-  throw new Error('computeCostPerExecution() not yet implemented — see task 25.1');
+  return tokenUsage * costPerToken;
 }
