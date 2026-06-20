@@ -1,177 +1,224 @@
-# AI Agent & MCP Testing Framework
-
-An open-source, end-to-end proof-of-concept that transforms a single
-natural-language requirement into a fully executed Playwright test suite,
-structured evaluation report, and observability dashboard.
-
-See **[docs/architecture.md](docs/architecture.md)** for the complete system
-design, component responsibilities, and implementation roadmap.
-
----
+# QA Agent Architecture
 
 ## Overview
 
-The system orchestrates a pipeline of five specialised AI agents via a
-LangGraph state machine:
-
-```
-Requirement_Agent → TestCase_Agent → Automation_Agent → Execution_Agent → Evaluation_Agent
-```
-
-MCP (Model Context Protocol) servers handle all I/O: browser automation
-(Playwright), file persistence (File System), database (PostgreSQL), and source
-control (GitHub). No MCP functionality is re-implemented — the framework builds
-only testing, evaluation, and observability on top.
+The QA Agent accepts a natural-language task (e.g. "Open a website and validate
+login page"), plans a sequence of browser actions via a LangGraph-style state
+machine, executes them through the Playwright MCP Server, validates results, and
+returns a structured execution report.
 
 ---
 
-## Prerequisites
+## Component Diagram
 
-| Software | Version |
+```mermaid
+graph TD
+    User["User\n'Open website & validate login page'"]
+    QAAgent["QAAgent\nsrc/agents/qa/index.ts"]
+    Memory["InMemoryAgentMemory\nsrc/agents/qa/memory.ts"]
+    Planner["Planner\nsrc/agents/qa/planner.ts"]
+    Graph["StateGraph\nsrc/agents/qa/graph.ts"]
+    Validator["Validator\nsrc/agents/qa/validator.ts"]
+    Manager["MCPServerManager\nsrc/mcp/manager/index.ts"]
+    Retry["withExponentialBackoff\nsrc/mcp/manager/retry.ts"]
+    PlaywrightMCP["Playwright MCP Server\n(npx @playwright/mcp)"]
+    Logger["ConsoleLogger\nsrc/logging/logger.ts"]
+    Report["QAReport\n(returned to caller)"]
+
+    User -->|task string| QAAgent
+    QAAgent --> Memory
+    QAAgent --> Graph
+    Graph -->|plan stage| Planner
+    Graph -->|execute stage| Manager
+    Graph -->|validate stage| Validator
+    Graph -->|report stage| Report
+    Manager --> Retry
+    Retry --> PlaywrightMCP
+    Graph --> Logger
+    Manager --> Logger
+```
+
+---
+
+## LangGraph State Machine
+
+The agent runs through four sequential stages. Each stage can retry up to
+`maxStageRetries` times (default: 2) before transitioning to `failed`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> plan
+    plan --> execute : actions planned
+    plan --> failed : retries exhausted
+    execute --> validate : all actions attempted
+    execute --> report : critical failure
+    validate --> report : checks complete
+    report --> completed : report built
+    completed --> [*]
+    failed --> [*]
+```
+
+### Stage responsibilities
+
+| Stage | Responsibility |
 |---|---|
-| Node.js | ≥ 20.0.0 |
-| npm | ≥ 10.0.0 (bundled with Node 20) |
-| Docker | ≥ 24.0.0 |
-| Docker Compose | ≥ 2.20.0 (included in Docker Desktop) |
-| Git | ≥ 2.40.0 |
+| **plan** | Interprets task, queries available MCP tools, builds `PlannedAction[]`. Checks memory for similar prior tasks. |
+| **execute** | Runs each action via `MCPServerManager.callTool()` with retry + timeout. Collects `ActionResult[]`. |
+| **validate** | Runs text checks (keyword presence in page content) and structural checks (form field detection via `browser_evaluate`). |
+| **report** | Aggregates results into a `QAReport`. Sets `status`: `passed` / `partial` / `failed`. Stores result in memory. |
 
 ---
 
-## Quick Start
+## Sequence Diagram — "Validate Login Page"
 
-### 1 — Clone
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as QAAgent
+    participant M as InMemoryAgentMemory
+    participant G as StateGraph
+    participant P as Planner
+    participant Mgr as MCPServerManager
+    participant PW as Playwright MCP Server
+    participant V as Validator
+    participant L as Logger
 
-```bash
-git clone <repo-url> ai-qa-agent
-cd ai-qa-agent
-```
+    U->>A: run("Open website & validate login page")
+    A->>M: findSimilarTask(task)
+    M-->>A: prior task (or undefined)
+    A->>G: invoke(initialState)
 
-### 2 — Install dependencies
+    rect rgb(230, 245, 255)
+        note over G,P: Stage 1 — Plan
+        G->>P: planActions(task, availableTools)
+        P-->>G: PlannedAction[]
+        G->>L: log plan.complete
+    end
 
-```bash
-npm install
-```
+    rect rgb(230, 255, 230)
+        note over G,PW: Stage 2 — Execute
+        loop for each PlannedAction
+            G->>Mgr: callTool(serverId, toolName, input, sessionId)
+            Mgr->>PW: MCP tool call (with retry + timeout)
+            PW-->>Mgr: tool result
+            Mgr-->>G: ActionResult
+            G->>L: log action result
+        end
+    end
 
-### 3 — Configure
+    rect rgb(255, 245, 230)
+        note over G,V: Stage 3 — Validate
+        G->>V: runTextValidations(specs, results)
+        V-->>G: ValidationCheck[] (keyword presence)
+        G->>V: runStructuralValidation(results)
+        V-->>G: ValidationCheck[] (form elements)
+        G->>L: log validate.complete
+    end
 
-```bash
-cp .env.example .env
-# Open .env and set at minimum:
-#   OPENAI_API_KEY=<your-key>
-#   DATABASE_URL=postgresql://postgres:password@localhost:5432/qa_agent
-```
+    rect rgb(245, 230, 255)
+        note over G: Stage 4 — Report
+        G->>G: build QAReport
+        G->>L: log report.complete
+    end
 
-### 4 — Start infrastructure (Docker Compose)
-
-```bash
-docker compose up -d
-```
-
-All services (PostgreSQL, Playwright MCP, File System MCP, PostgreSQL MCP,
-GitHub MCP) start on the `qa-net` bridge network. The `app` service is also
-started, listening on **http://localhost:3000**.
-
-Wait for everything to be healthy:
-
-```bash
-docker compose ps
-# All services should show "healthy" after ~30 s
-```
-
-### 5 — Run without Docker (development)
-
-```bash
-# Requires DATABASE_URL pointing to a running PostgreSQL instance
-npm run dev
-```
-
-### 6 — Run tests
-
-```bash
-# Unit tests
-npm run test:unit
-
-# Unit tests with coverage (target ≥ 80%)
-npm run test:unit:coverage
-
-# Integration tests (requires Docker Compose services running)
-npm run test:integration
-```
-
-### 7 — Type check + lint + format
-
-```bash
-npm run typecheck    # tsc --noEmit
-npm run lint         # ESLint
-npm run format:check # Prettier
+    G-->>A: final state
+    A->>M: store(sessionId, task, actions, report)
+    A-->>U: QAReport
 ```
 
 ---
 
-## API Endpoints
+## Sequence Diagram — Retry Flow
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/sessions` | Submit a requirement; returns `{ sessionId }` |
-| `GET` | `/api/sessions/:sessionId` | Poll session status |
-| `GET` | `/api/sessions/:sessionId/report` | Download HTML report |
-| `GET` | `/dashboard` | Observability dashboard |
-| `GET` | `/health` | Health check (used by Docker) |
+```mermaid
+sequenceDiagram
+    participant G as StateGraph (execute)
+    participant Mgr as MCPServerManager
+    participant R as withExponentialBackoff
+    participant PW as Playwright MCP
 
-**Submit a requirement:**
+    G->>Mgr: callTool("browser_navigate", ...)
+    Mgr->>R: withExponentialBackoff(fn, 3, 1000ms)
 
-```bash
-curl -X POST http://localhost:3000/api/sessions \
-  -H "Content-Type: application/json" \
-  -d '{"requirement": "As a user I want to log in with email and password so that I can access my account"}'
-# → { "sessionId": "..." }
-```
+    R->>PW: attempt 1
+    PW-->>R: ECONNRESET (transient)
+    R->>R: wait 1000ms
 
-**Poll status:**
+    R->>PW: attempt 2
+    PW-->>R: ECONNRESET (transient)
+    R->>R: wait 2000ms
 
-```bash
-curl http://localhost:3000/api/sessions/<sessionId>
-# → { "sessionId": "...", "status": "running", "currentAgent": "TestCaseAgent", ... }
-```
-
----
-
-## Project Structure
-
-```
-ai-qa-agent/
-├── src/              # All TypeScript source
-│   ├── agents/       # Five AI agents + orchestrator
-│   ├── mcp/          # MCP manager + testing framework
-│   ├── evals/        # Agent evaluation framework
-│   ├── api/          # Express REST API
-│   ├── dashboards/   # Observability dashboard
-│   ├── reports/      # HTML report generator
-│   ├── logging/      # Structured logger
-│   ├── db/           # PostgreSQL client + migrations
-│   └── shared/       # Types + config
-├── tests/            # Vitest tests (unit + integration)
-├── evals/fixtures/   # Sample session logs + reference data
-├── docs/             # Architecture documentation
-├── docker/           # Dockerfile + init.sql
-└── reports/          # Runtime HTML output (git-ignored)
+    R->>PW: attempt 3
+    PW-->>R: success
+    R-->>Mgr: result
+    Mgr-->>G: ActionResult { status: "success", attempt: 3 }
 ```
 
 ---
 
-## Implementation Status
+## Agent Memory
 
-The project skeleton is complete. Each `src/` module contains a typed stub with
-a `TODO (task N.N)` comment indicating where the business logic is implemented.
-Phases are executed in order — see
-[docs/architecture.md](docs/architecture.md#5-implementation-roadmap) for the
-full roadmap.
+`InMemoryAgentMemory` is a circular buffer (default max 100 entries).
+
+- **Store**: after every `run()` completion
+- **Lookup**: at the start of `plan` stage — finds prior task with ≥50% keyword
+  overlap
+- **Effect**: the planner logs a `memory.hit` entry when a similar prior task is
+  found, which can inform future plan refinement
+
+```
+Memory {
+  entries: [
+    { sessionId, task, actions: PlannedAction[], report: QAReport, timestamp }
+    ...
+  ]
+}
+```
 
 ---
 
-## Contributing
+## Retry Policy
 
-1. Create a feature branch from `develop`
-2. Make changes — Husky runs `lint-staged` on commit
-3. Open a pull request targeting `develop`
-4. CI must pass (type check + lint + format + unit tests) before merge
+| Layer | Max attempts | Base delay | Transient errors |
+|---|---|---|---|
+| MCP tool call (`MCPServerManager`) | 3 | 1000ms (doubles: 1s→2s→4s) | ECONNRESET, ETIMEDOUT, ECONNREFUSED, socket hang up, HTTP 503 |
+| QA Agent stage | 2 (configurable) | immediate | any `Error` thrown by a stage node |
+
+---
+
+## QAReport Shape
+
+```typescript
+interface QAReport {
+  sessionId: string;       // UUID per run
+  task: string;            // original user input
+  status: 'passed' | 'failed' | 'partial';
+  startedAt: string;       // ISO8601
+  completedAt: string;     // ISO8601
+  durationMs: number;
+  actions: ActionResult[]; // one per planned action
+  validations: ValidationCheck[];
+  summary: string;         // human-readable one-liner
+  errors: string[];        // stage/action error messages
+}
+```
+
+**Status rules:**
+- `passed` — all actions succeeded AND all validations passed AND no errors
+- `failed` — all actions failed OR (errors present AND no validations passed)
+- `partial` — some actions/validations passed, some failed
+
+---
+
+## File Structure
+
+```
+src/agents/qa/
+├── index.ts       QAAgent — entry point, stage orchestration, memory store
+├── types.ts       All QA-specific TypeScript interfaces
+├── memory.ts      InMemoryAgentMemory — circular buffer with similarity search
+├── planner.ts     Task → PlannedAction[] (keyword-based tool selection)
+├── graph.ts       Four stage nodes: plan / execute / validate / report
+├── validator.ts   Text + structural validation of execution results
+└── demo.ts        Runnable demo script
+```
