@@ -5,6 +5,25 @@ export interface ReferenceDecision {
   optimalTool: string;
 }
 
+export interface ToolAccuracyDecision {
+  toolCall: string;
+  optimalTool: string;
+}
+
+export interface RecoveryEvent {
+  sessionId: string;
+  fromStatus: string;
+  toStatus: string;
+  tool: string;
+}
+
+export function computeGoalCompletion(log: LogEntry[]): number {
+  const taskEvents = log.filter((e) => e.agent !== 'mcp.manager');
+  if (taskEvents.length === 0) return 0;
+  const completed = taskEvents.filter((e) => e.status === 'success').length;
+  return completed / taskEvents.length;
+}
+
 export function computeTaskSuccessRate(log: LogEntry[]): number {
   const tasks = log.filter((e) => e.agent !== 'mcp.manager');
   if (tasks.length === 0) return 0;
@@ -36,13 +55,34 @@ export function computeToolAccuracy(
   return compared === 0 ? null : correct / compared;
 }
 
-export function computeHallucinationRate(
-  _log: LogEntry[],
-  _groundedRef?: string,
-  _threshold?: number,
+export function computeSemanticSimilarity(
+  similarity: number | null,
 ): number | null {
-  // Requires semantic evaluation — returns null until DeepEval adapter is wired
-  return null;
+  return similarity;
+}
+
+export function computeRecoveryRate(log: LogEntry[]): number {
+  const transitions = log
+    .filter((e) => e.agent !== 'mcp.manager')
+    .map((e) => e.status);
+
+  if (transitions.length < 2) return 0;
+
+  let recoveries = 0;
+  for (let i = 1; i < transitions.length; i += 1) {
+    if (transitions[i - 1] === 'error' && transitions[i] === 'success') {
+      recoveries += 1;
+    }
+  }
+
+  return recoveries / Math.max(transitions.length - 1, 1);
+}
+
+export function computeHallucinationRate(
+  similarity: number | null,
+): number | null {
+  if (similarity === null) return null;
+  return 1 - similarity;
 }
 
 export function computeAverageLatency(log: LogEntry[]): number {
@@ -52,7 +92,7 @@ export function computeAverageLatency(log: LogEntry[]): number {
 }
 
 export function computeTokenUsage(log: LogEntry[]): number {
-  return log.reduce((sum, e) => sum + e.tokensUsed, 0);
+  return log.reduce((sum, e) => sum + e.tokens, 0);
 }
 
 export function computeFailureRate(log: LogEntry[]): number {

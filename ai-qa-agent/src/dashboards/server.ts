@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -7,13 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export function createDashboardRouter(): Router {
   const router = Router();
 
-  router.use(
-    '/public',
-    (_req, _res, next) => {
-      // TODO (task 30.3): wire express.static(path.join(__dirname, 'public'))
-      next();
-    },
-  );
+  router.use('/public', express.static(path.join(__dirname, 'public')));
 
   // SPA shell
   router.get('/', (_req, res) => {

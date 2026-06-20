@@ -67,3 +67,66 @@ tbody tr:last-child td { border-bottom: none; }
   box-shadow: 0 1px 3px rgba(0,0,0,.08);
 }
 canvas { max-width: 100%; }
+
+.filters-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1.5rem;
+}
+
+.filters-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.filters-form input,
+.filters-form select,
+.filters-form button {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.filters-form button {
+  background: #0d6efd;
+  color: #fff;
+  border-color: transparent;
+  cursor: pointer;
+}
+
+.filters-form button:hover {
+  background: #0b5ed7;
+}
+
+.drilldown-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.drilldown-actions button {
+  padding: 0.65rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #198754;
+  color: #fff;
+  cursor: pointer;
+}
+
+.drilldown-actions button:hover {
+  background: #157347;
+}
+
+#drilldown-content table {
+  font-size: 0.85rem;
+}
+
+#drilldown-section.hidden {
+  display: none;
+}

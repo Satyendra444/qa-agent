@@ -5,6 +5,8 @@ import { requestLogger } from './middleware/logger.js';
 import { globalErrorHandler } from './middleware/error.js';
 import { createSessionRouter } from './routes/sessions.js';
 import { createReportRouter } from './routes/reports.js';
+import { createDashboardApiRouter } from './routes/dashboard.js';
+import { createDashboardRouter } from '@dashboards/server.js';
 
 export function createApp(
   orchestrator: OrchestratorAgent,
@@ -22,6 +24,8 @@ export function createApp(
 
   app.use('/api/sessions', createSessionRouter(orchestrator));
   app.use('/api/sessions/:sessionId/report', createReportRouter(reportDir));
+  app.use('/api/dashboard', createDashboardApiRouter());
+  app.use('/dashboard', createDashboardRouter());
 
   app.use(globalErrorHandler);
 

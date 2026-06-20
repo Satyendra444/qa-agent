@@ -26,8 +26,8 @@ export class LogPersistence implements ILogPersistence {
     const tryWrite = async (): Promise<void> => {
       await this._pool.query(
         `INSERT INTO agent_logs
-           (timestamp, session_id, agent, tool, input, output, latency, status, tokens_used, errors)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+           (timestamp, session_id, agent, tool, input, output, latency, status, tokens, cost, errors)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
         [
           entry.timestamp,
           entry.sessionId,
@@ -37,7 +37,8 @@ export class LogPersistence implements ILogPersistence {
           JSON.stringify(entry.output),
           entry.latency,
           entry.status,
-          entry.tokensUsed,
+          entry.tokens,
+          entry.cost,
           JSON.stringify(entry.errors),
         ],
       );
@@ -67,13 +68,13 @@ export class LogPersistence implements ILogPersistence {
       try {
         await this._pool.query(
           `INSERT INTO agent_logs
-             (timestamp, session_id, agent, tool, input, output, latency, status, tokens_used, errors)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+             (timestamp, session_id, agent, tool, input, output, latency, status, tokens, cost, errors)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
            ON CONFLICT DO NOTHING`,
           [
             entry.timestamp, entry.sessionId, entry.agent, entry.tool,
             JSON.stringify(entry.input), JSON.stringify(entry.output),
-            entry.latency, entry.status, entry.tokensUsed, JSON.stringify(entry.errors),
+            entry.latency, entry.status, entry.tokens, entry.cost, JSON.stringify(entry.errors),
           ],
         );
       } catch {

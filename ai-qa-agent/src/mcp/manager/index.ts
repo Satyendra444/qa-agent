@@ -100,7 +100,8 @@ export class MCPServerManager {
         output: {},
         latency,
         status: 'error',
-        tokensUsed: 0,
+        tokens: 0,
+        cost: 0,
         errors: [String(err)],
       });
       throw err;
@@ -116,7 +117,8 @@ export class MCPServerManager {
       output: typeof result === 'object' && result !== null ? (result as Record<string, unknown>) : { result },
       latency,
       status: 'success',
-      tokensUsed: 0,
+      tokens: 0,
+      cost: 0,
       errors: [],
     });
 

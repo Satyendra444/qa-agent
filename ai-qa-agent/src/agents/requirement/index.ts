@@ -101,7 +101,8 @@ export class RequirementAgent {
         timestamp: new Date().toISOString(), sessionId: this._sessionId,
         agent: 'requirement.agent', tool: 'llm.chat',
         input: { requirement }, output: {},
-        latency, status: 'error', tokensUsed,
+        latency, status: 'error', tokens,
+        cost: 0,
         errors: [String(err)],
       });
       return { error: 'LLM_FAILURE', reason: String(err) };

@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS agent_logs (
     output          JSONB,
     latency         INTEGER     NOT NULL,
     status          TEXT        NOT NULL,
-    tokens_used     INTEGER     NOT NULL DEFAULT 0,
+    tokens          INTEGER     NOT NULL DEFAULT 0,
+    cost            NUMERIC(18,6) NOT NULL DEFAULT 0,
     errors          JSONB
 );
 

@@ -4,9 +4,18 @@ import type { MCPServerManager } from '@mcp/manager/index.js';
 import type { ISemanticEvaluator } from '@evals/deepeval.js';
 import { HallucinationDetector } from '@evals/hallucination.js';
 import {
-  computeTaskSuccessRate, computeToolAccuracy, computeAverageLatency,
-  computeTokenUsage, computeFailureRate, computeCostPerExecution,
+  computeGoalCompletion,
+  computeTaskSuccessRate,
+  computeToolAccuracy,
+  computeHallucinationRate,
+  computeRecoveryRate,
+  computeSemanticSimilarity,
+  computeAverageLatency,
+  computeTokenUsage,
+  computeFailureRate,
+  computeCostPerExecution,
 } from '@evals/metrics.js';
+import { computeEvaluationScore } from '@evals/scoring.js';
 import type { LogEntry } from '@shared/types.js';
 
 export type EvaluationAgentResult = EvaluationReport | AgentError;
@@ -61,14 +70,29 @@ export class EvaluationAgent {
     const report: EvaluationReport = {
       sessionId: this._sessionId,
       metrics: {
+        GoalCompletion: sessionLog.length > 0 ? computeGoalCompletion(sessionLog) : taskSuccessRate,
         TaskSuccessRate: taskSuccessRate,
         ToolAccuracy: sessionLog.length > 0 ? computeToolAccuracy(sessionLog) : null,
+        SemanticSimilarity: hallucinationRate !== null ? 1 - hallucinationRate : null,
         HallucinationRate: hallucinationRate,
+        RecoveryRate: sessionLog.length > 0 ? computeRecoveryRate(sessionLog) : 0,
         AverageLatency: sessionLog.length > 0 ? computeAverageLatency(sessionLog) : 0,
         TokenUsage: tokenUsage,
         FailureRate: failureRate,
         CostPerExecution: computeCostPerExecution(tokenUsage, this._costPerToken),
       },
+      score: computeEvaluationScore({
+        GoalCompletion: sessionLog.length > 0 ? computeGoalCompletion(sessionLog) : taskSuccessRate,
+        TaskSuccessRate: taskSuccessRate,
+        ToolAccuracy: sessionLog.length > 0 ? computeToolAccuracy(sessionLog) : null,
+        SemanticSimilarity: hallucinationRate !== null ? 1 - hallucinationRate : null,
+        HallucinationRate: hallucinationRate,
+        RecoveryRate: sessionLog.length > 0 ? computeRecoveryRate(sessionLog) : 0,
+        AverageLatency: sessionLog.length > 0 ? computeAverageLatency(sessionLog) : 0,
+        TokenUsage: tokenUsage,
+        FailureRate: failureRate,
+        CostPerExecution: computeCostPerExecution(tokenUsage, this._costPerToken),
+      }),
       hallucinations,
       recommendations: this._buildRecommendations(taskSuccessRate, failureRate, hallucinations.length),
       generatedAt: new Date().toISOString(),

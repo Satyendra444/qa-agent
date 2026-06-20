@@ -3,9 +3,18 @@ import type { LogEntry, EvaluationReport } from '@shared/types.js';
 import type { ISemanticEvaluator } from './deepeval.js';
 import type { ReferenceDecision } from './metrics.js';
 import {
-  computeTaskSuccessRate, computeToolAccuracy, computeHallucinationRate,
-  computeAverageLatency, computeTokenUsage, computeFailureRate, computeCostPerExecution,
+  computeGoalCompletion,
+  computeTaskSuccessRate,
+  computeToolAccuracy,
+  computeHallucinationRate,
+  computeRecoveryRate,
+  computeSemanticSimilarity,
+  computeAverageLatency,
+  computeTokenUsage,
+  computeFailureRate,
+  computeCostPerExecution,
 } from './metrics.js';
+import { computeEvaluationScore } from './scoring.js';
 
 export interface EvaluationInput {
   sessionId: string;
@@ -33,20 +42,25 @@ function isValidLog(log: LogEntry[]): boolean {
       typeof e.sessionId === 'string' &&
       typeof e.agent === 'string' &&
       typeof e.latency === 'number' &&
-      typeof e.tokensUsed === 'number',
+      typeof e.tokens === 'number' &&
+      typeof e.cost === 'number',
   );
 }
 
 function buildMarkdown(report: EvaluationReport): string {
   const m = report.metrics;
   const rows = [
+    ['GoalCompletion', m.GoalCompletion.toFixed(4)],
     ['TaskSuccessRate', m.TaskSuccessRate.toFixed(4)],
     ['ToolAccuracy', m.ToolAccuracy !== null ? m.ToolAccuracy.toFixed(4) : 'N/A'],
+    ['SemanticSimilarity', m.SemanticSimilarity !== null ? m.SemanticSimilarity.toFixed(4) : 'N/A'],
     ['HallucinationRate', m.HallucinationRate !== null ? m.HallucinationRate.toFixed(4) : 'N/A'],
+    ['RecoveryRate', m.RecoveryRate.toFixed(4)],
     ['AverageLatency (ms)', m.AverageLatency.toFixed(2)],
     ['TokenUsage', String(m.TokenUsage)],
     ['FailureRate', m.FailureRate.toFixed(4)],
     ['CostPerExecution ($)', m.CostPerExecution.toFixed(6)],
+    ['OverallScore', report.score.overall.toFixed(4)],
   ];
 
   const table = [
@@ -85,26 +99,35 @@ export class AgentEvaluationFramework {
 
     const tokenUsage = computeTokenUsage(sessionLog);
 
+    let semanticSimilarity: number | null = null;
     let hallucinationRate: number | null = null;
+
     if (groundedReference) {
       const outputs = sessionLog.map((e) => JSON.stringify(e.output)).join(' ');
       const evalResult = await this._semanticEvaluator.evaluate(
         outputs, groundedReference, hallucinationThreshold,
       );
+      semanticSimilarity = evalResult.similarity;
       hallucinationRate = 1 - evalResult.similarity;
     }
 
+    const metrics = {
+      GoalCompletion: computeGoalCompletion(sessionLog),
+      TaskSuccessRate: computeTaskSuccessRate(sessionLog),
+      ToolAccuracy: computeToolAccuracy(sessionLog, referenceDecisions),
+      SemanticSimilarity: computeSemanticSimilarity(semanticSimilarity),
+      HallucinationRate: computeHallucinationRate(semanticSimilarity),
+      RecoveryRate: computeRecoveryRate(sessionLog),
+      AverageLatency: computeAverageLatency(sessionLog),
+      TokenUsage: tokenUsage,
+      FailureRate: computeFailureRate(sessionLog),
+      CostPerExecution: computeCostPerExecution(tokenUsage, costPerToken),
+    };
+
     const report: EvaluationReport = {
       sessionId,
-      metrics: {
-        TaskSuccessRate: computeTaskSuccessRate(sessionLog),
-        ToolAccuracy: computeToolAccuracy(sessionLog, referenceDecisions),
-        HallucinationRate: hallucinationRate ?? computeHallucinationRate(sessionLog, groundedReference, hallucinationThreshold),
-        AverageLatency: computeAverageLatency(sessionLog),
-        TokenUsage: tokenUsage,
-        FailureRate: computeFailureRate(sessionLog),
-        CostPerExecution: computeCostPerExecution(tokenUsage, costPerToken),
-      },
+      metrics,
+      score: computeEvaluationScore(metrics),
       hallucinations: [],
       recommendations: [],
       generatedAt: new Date().toISOString(),

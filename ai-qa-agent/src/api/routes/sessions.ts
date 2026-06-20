@@ -29,13 +29,5 @@ export function createSessionRouter(orchestrator: OrchestratorAgent): Router {
     res.status(200).json(session);
   });
 
-  router.get('/dashboard/sessions', async (_req: Request, res: Response): Promise<void> => {
-    res.status(501).json({ error: 'NOT_IMPLEMENTED', message: 'See task 29.1' });
-  });
-
-  router.get('/dashboard/metrics', async (_req: Request, res: Response): Promise<void> => {
-    res.status(501).json({ error: 'NOT_IMPLEMENTED', message: 'See task 29.1' });
-  });
-
   return router;
 }

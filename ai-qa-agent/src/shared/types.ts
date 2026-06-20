@@ -7,7 +7,8 @@ export interface LogEntry {
   output: Record<string, unknown>;
   latency: number;          // ms
   status: string;
-  tokensUsed: number;
+  tokens: number;
+  cost: number;
   errors: string[];
 }
 
@@ -85,19 +86,36 @@ export interface TestResult {
 export interface EvaluationReport {
   sessionId: string;
   metrics: EvaluationMetrics;
+  score: EvaluationScore;
   hallucinations: HallucinationFlag[];
   recommendations: string[];
   generatedAt: string;      // ISO8601
 }
 
 export interface EvaluationMetrics {
+  GoalCompletion: number;
   TaskSuccessRate: number;
   ToolAccuracy: number | null;
+  SemanticSimilarity: number | null;
   HallucinationRate: number | null;
+  RecoveryRate: number;
   AverageLatency: number;
   TokenUsage: number;
   FailureRate: number;
   CostPerExecution: number;
+}
+
+export interface EvaluationScore {
+  overall: number;
+  components: {
+    GoalCompletion: number;
+    ToolAccuracy: number;
+    SemanticSimilarity: number;
+    HallucinationResistance: number;
+    RecoveryRate: number;
+    LatencyScore: number;
+    CostScore: number;
+  };
 }
 
 export interface HallucinationFlag {

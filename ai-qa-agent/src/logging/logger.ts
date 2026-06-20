@@ -9,7 +9,8 @@ export interface ILogger {
     input: Record<string, unknown>,
     output: Record<string, unknown>,
     latencyMs: number,
-    tokensUsed?: number,
+    tokens?: number,
+    cost?: number,
   ): void;
   warn(sessionId: string, agent: string, message: string, extra?: Record<string, unknown>): void;
   error(sessionId: string, agent: string, message: string, errors?: string[]): void;
@@ -27,7 +28,8 @@ export class ConsoleLogger implements ILogger {
     input: Record<string, unknown>,
     output: Record<string, unknown>,
     latencyMs: number,
-    tokensUsed = 0,
+    tokens = 0,
+    cost = 0,
   ): void {
     this.log({
       timestamp: new Date().toISOString(),
@@ -38,7 +40,8 @@ export class ConsoleLogger implements ILogger {
       output,
       latency: latencyMs,
       status: 'success',
-      tokensUsed,
+      tokens,
+      cost,
       errors: [],
     });
   }
@@ -58,7 +61,8 @@ export class ConsoleLogger implements ILogger {
       output: { message, ...extra },
       latency: 0,
       status: 'warning',
-      tokensUsed: 0,
+      tokens: 0,
+      cost: 0,
       errors: [message],
     });
   }
@@ -78,7 +82,8 @@ export class ConsoleLogger implements ILogger {
       output: { message },
       latency: 0,
       status: 'error',
-      tokensUsed: 0,
+      tokens: 0,
+      cost: 0,
       errors: errors.length > 0 ? errors : [message],
     });
   }

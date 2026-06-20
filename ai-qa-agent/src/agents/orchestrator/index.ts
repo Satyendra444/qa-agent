@@ -1,6 +1,5 @@
 import type { ILogger } from '@logging/logger.js';
-import type { Session } from '@shared/types.js';
-import { createSession } from './state.js';
+import type { Session } from '@shared/types.js';import { createSession } from './state.js';
 
 export interface ISessionStore {
   save(session: Session): Promise<void>;

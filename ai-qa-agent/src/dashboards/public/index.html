@@ -15,7 +15,39 @@
   </header>
 
   <main>
-    <!-- Session list (Requirement 13.1) -->
+    <section id="filters-section">
+      <h2>Filters</h2>
+      <form id="dashboard-filters" class="filters-form">
+        <label>
+          Status
+          <select id="filter-status">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="running">Running</option>
+            <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
+          </select>
+        </label>
+        <label>
+          Agent
+          <input id="filter-agent" type="text" placeholder="Agent name" />
+        </label>
+        <label>
+          Tool
+          <input id="filter-tool" type="text" placeholder="Tool name" />
+        </label>
+        <label>
+          From
+          <input id="filter-from" type="date" />
+        </label>
+        <label>
+          To
+          <input id="filter-to" type="date" />
+        </label>
+        <button type="submit">Apply</button>
+      </form>
+    </section>
+
     <section id="sessions-section">
       <h2>Sessions</h2>
       <table id="sessions-table" aria-label="Session list">
@@ -24,7 +56,7 @@
             <th scope="col">Session ID</th>
             <th scope="col">Status</th>
             <th scope="col">Started At</th>
-            <th scope="col">Duration (ms)</th>
+            <th scope="col">Duration</th>
             <th scope="col">Result</th>
           </tr>
         </thead>
@@ -34,29 +66,25 @@
       </table>
     </section>
 
-    <!-- Per-session drill-down (Requirement 13.2 / 13.3) -->
     <section id="drilldown-section" class="hidden">
       <h2>Session Detail — <span id="drilldown-session-id"></span></h2>
-      <div id="drilldown-content">
-        <!-- populated by charts.js on row click -->
-      </div>
+      <div id="drilldown-content"></div>
     </section>
 
-    <!-- Metric charts (Requirements 13.5 / 13.6 / 13.7) -->
     <section id="charts-section">
       <h2>Metrics</h2>
       <div class="chart-grid">
         <div>
-          <h3>Task Success Rate &amp; Failure Rate (last 90 days)</h3>
+          <h3>Success vs Failure</h3>
           <canvas id="chart-success-failure" aria-label="Success and failure rate chart"></canvas>
         </div>
         <div>
-          <h3>Average Latency per Agent (last 90 days)</h3>
-          <canvas id="chart-latency" aria-label="Average latency chart"></canvas>
+          <h3>Latency and Cost</h3>
+          <canvas id="chart-latency" aria-label="Latency and cost chart"></canvas>
         </div>
         <div>
-          <h3>Hallucination Rate &amp; Tool Accuracy (rolling 30 sessions)</h3>
-          <canvas id="chart-hallucination-accuracy" aria-label="Hallucination and accuracy chart"></canvas>
+          <h3>Tokens and Agent Activity</h3>
+          <canvas id="chart-tokens" aria-label="Token usage chart"></canvas>
         </div>
       </div>
     </section>
