@@ -1,0 +1,1 @@
+As a returning customer, I want to log in with my email and password so that I can access my personal dashboard and view my order history.

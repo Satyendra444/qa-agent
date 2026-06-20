@@ -1,0 +1,88 @@
+{
+  "sessionId": "demo-session-001",
+  "requirement": "As a returning customer, I want to log in with my email and password so that I can access my personal dashboard and view my order history.",
+  "scenarios": [
+    {
+      "id": "scenario-1",
+      "title": "Successful login with valid credentials",
+      "description": "The customer enters a valid email and password and is redirected to their dashboard.",
+      "acceptanceCriteria": [
+        "The login form accepts valid email and password input.",
+        "Successful authentication redirects the user to their dashboard page.",
+        "The dashboard displays the user's name and recent orders."
+      ],
+      "edgeCases": [
+        "Incorrect password is rejected with an error message.",
+        "Unregistered email shows a validation message.",
+        "Blank fields are not accepted."
+      ]
+    }
+  ],
+  "testCases": [
+    {
+      "id": "tc-1",
+      "title": "Valid login succeeds",
+      "type": "positive",
+      "preconditions": ["Customer has an active account."],
+      "steps": [
+        "Open login page",
+        "Enter valid email",
+        "Enter valid password",
+        "Click login"
+      ],
+      "expectedResult": "The customer is redirected to the dashboard and sees their order history."
+    }
+  ],
+  "executionResult": {
+    "totalTests": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "duration": 4210,
+    "tests": [
+      {
+        "testId": "tc-1",
+        "title": "Valid login succeeds",
+        "status": "passed",
+        "durationMs": 4210,
+        "errorMessage": null,
+        "artifactPaths": {
+          "screenshot": "artifacts/login-success.png"
+        }
+      }
+    ]
+  },
+  "evaluationReport": {
+    "metrics": {
+      "GoalCompletion": 1,
+      "TaskSuccessRate": 1,
+      "ToolAccuracy": 0.95,
+      "SemanticSimilarity": 0.88,
+      "HallucinationRate": 0,
+      "RecoveryRate": 1,
+      "AverageLatency": 2105,
+      "TokenUsage": 320,
+      "FailureRate": 0,
+      "CostPerExecution": 0.16
+    },
+    "score": {
+      "overall": 92,
+      "components": {
+        "GoalCompletion": 20,
+        "ToolAccuracy": 18,
+        "SemanticSimilarity": 15,
+        "HallucinationResistance": 18,
+        "RecoveryRate": 12,
+        "LatencyScore": 5,
+        "CostScore": 4
+      }
+    },
+    "hallucinations": [],
+    "recommendations": [
+      "Continue using the same login verification flow.",
+      "Add a second test case for invalid credentials.",
+      "Capture additional failure artifacts for edge-case regressions."
+    ],
+    "generatedAt": "2026-06-20T00:00:00.000Z"
+  }
+}
